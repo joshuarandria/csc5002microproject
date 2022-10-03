@@ -1,0 +1,5 @@
+variables:
+  GIT_STRATEGY: clone
+job1:
+  script: "source /etc/profile.d/maven.sh; java -version; mvn -version; timeout 380 mvn clean install -DskipTests; x=$?; if [ $x -eq 124 ]; then echo 'program time out!'; fi"
+  tags: ['JAVA17']
