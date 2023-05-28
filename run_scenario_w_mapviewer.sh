@@ -84,10 +84,10 @@ fi
 if [ -z "$GLASSFISH_HOME" ]; then
     echo "Glassfish is not installed: the tourist application cannot be executed"
 else
-    ./Scripts/start_tourist_application_w_emulated_location.sh Joe
+    ./Scripts/start_tourist_application_w_emulated_location.sh Joe The_unusual_Paris 
     # pid to kill at the end in ~/.vlibtour/tourist_applications
     sleep 1
-    ./Scripts/start_tourist_application_w_emulated_location.sh Avrel
+    ./Scripts/start_tourist_application_w_emulated_location.sh Avrel The_unusual_Paris The_unusual_Paris_Joe
     # pid to kill at the end in ~/.vlibtour/tourist_applications
     sleep 1
 fi

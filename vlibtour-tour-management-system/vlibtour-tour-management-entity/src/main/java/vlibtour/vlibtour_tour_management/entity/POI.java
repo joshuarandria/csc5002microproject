@@ -25,13 +25,14 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 
-
 import java.io.Serializable;
+import java.util.Collection;
 
 /**
  * The entity bean defining a point of interest (POI). A {@link Tour} is a
@@ -52,9 +53,9 @@ public class POI implements Serializable {
 	/**
 	 * id of POI
 	 */
-	 @Id
+	@Id
 	@Column(name = "POID")
-	@GeneratedValue(strategy=GenerationType.AUTO)
+	@GeneratedValue(strategy = GenerationType.AUTO)
 	private String poid;
 	/**
 	 * name of POI
@@ -67,27 +68,52 @@ public class POI implements Serializable {
 	/**
 	 * latitude of POI
 	 */
-	private int latitude;
+	private double latitude;
 	/**
 	 * longitude of POI
 	 */
-	private int longitude;
+	private double longitude;
+
 	/**
 	 * the corresponding tour
 	 */
-	private Tour tour;
+	// @ManyToMany(mappedBy = "pois")
+	private Collection<Tour> tour;
+	// private Tour tour;
+
+	// /**
+	//  * constructor for poi.
+	//  *
+	//  * @param poid
+	//  * @param name
+	//  * @param description
+	//  * @param latitude
+	//  * @param longitude
+	//  */
+	// public POI(final String poid, final String name, final String description, final int latitude,
+	// 		final int longitude) {
+	// 	this.description = description;
+	// 	this.latitude = latitude;
+	// 	this.longitude = longitude;
+	// 	this.poid = poid;
+	// 	this.name = name;
+	// }
 
 	/**
 	 * gets the poid of the tour.
 	 *
 	 * @return the poid of the tour.
 	 */
+	@Id
 	public String getPoid() {
 		return poid;
 	}
 
 	/**
 	 * sets the poid of the tour.
+	 * 
+	 * @param poid
+	 *             id of poi
 	 */
 	public void setPoid(String poid) {
 		this.poid = poid;
@@ -95,16 +121,18 @@ public class POI implements Serializable {
 
 	/**
 	 * gets the name of the tour.
-	 *
+	 * 
 	 * @return the name of the tour.
 	 */
-	@Column(name = "POI_NAME")
 	public String getName() {
 		return this.name;
 	}
 
 	/**
-	 * sets the name of the tour.
+	 * sets the name of the tour. *
+	 * 
+	 * @param name
+	 *             name of poi
 	 */
 	public void setName(String name) {
 		this.name = name;
@@ -121,7 +149,10 @@ public class POI implements Serializable {
 	}
 
 	/**
-	 * sets the description of the tour.
+	 * sets the description of the tour. *
+	 * 
+	 * @param description
+	 *                    description of poi
 	 */
 	public void setDescription(String description) {
 		this.description = description;
@@ -133,14 +164,17 @@ public class POI implements Serializable {
 	 * @return the latitude of the tour.
 	 */
 	@Column(name = "POI_LATITTUDE")
-	public int getLatitude() {
+	public double getLatitude() {
 		return latitude;
 	}
 
 	/**
 	 * sets the latitude of the tour.
+	 * 
+	 * @param latitude
+	 *                 latitude
 	 */
-	public void setLatitude(int latitude) {
+	public void setLatitude(double latitude) {
 		this.latitude = latitude;
 	}
 
@@ -150,14 +184,17 @@ public class POI implements Serializable {
 	 * @return the longitude of the tour.
 	 */
 	@Column(name = "POI_LONGITUDE")
-	public int getLongitude() {
+	public double getLongitude() {
 		return longitude;
 	}
 
 	/**
 	 * sets the longitude of the tour.
+	 * 
+	 * @param longitude
+	 *                  longitude
 	 */
-	public void setLongitude(int longitude) {
+	public void setLongitude(double longitude) {
 		this.longitude = longitude;
 	}
 
@@ -166,20 +203,20 @@ public class POI implements Serializable {
 	 *
 	 * @return the tour.
 	 */
-	@ManyToOne()
+	@ManyToMany(mappedBy = "pois")
 	@JoinColumn(name = "TOUR_ID")
-	public Tour getTour() {
+	public Collection<Tour> getTour() {
 		return tour;
 	}
 
 	/**
- * sets the tour.
- *
- * @param tour
- *            the tour.
- */
-public void setTour(final Tour tour) {
-	this.tour = tour;
-}
+	 * sets the tours.
+	 *
+	 * @param newTour
+	 *                newtours
+	 */
+	public void setTour(final Collection<Tour> newTour) {
+		this.tour = newTour;
+	}
 
 }

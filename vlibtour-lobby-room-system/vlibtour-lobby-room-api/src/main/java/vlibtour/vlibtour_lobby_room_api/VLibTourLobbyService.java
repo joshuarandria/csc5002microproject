@@ -21,6 +21,7 @@ Contributor(s):
  */
 package vlibtour.vlibtour_lobby_room_api;
 
+import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -70,6 +71,7 @@ public interface VLibTourLobbyService {
 	 * @return the URL to the group communication system of the group, i.e. each
 	 *         group has a dedicated group communication system. This is the URL for
 	 *         this group, i.e. each user of the group has a dedicated URL.
+	 *
 	 */
 	String createGroupAndJoinIt(String groupId, String userId);
 
@@ -81,6 +83,7 @@ public interface VLibTourLobbyService {
 	 * @return the URL to the group communication system of the group, i.e. each
 	 *         group has a dedicated group communication system. This is the URL for
 	 *         this group, i.e. each user of the group has a dedicated URL.
+	 * 
 	 */
 	String joinAGroup(String groupId, String userId);
 

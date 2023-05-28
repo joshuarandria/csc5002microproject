@@ -23,6 +23,8 @@ package vlibtour.vlibtour_tour_management.entity;
 
 import java.io.Serializable;
 
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 
 import java.util.ArrayList;
@@ -30,11 +32,12 @@ import java.util.Collection;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import static jakarta.persistence.CascadeType.ALL;
-
 
 /**
  * The entity bean defining a tour in the VLibTour case study. A tour is a
@@ -52,9 +55,11 @@ public class Tour implements Serializable {
 	private static final long serialVersionUID = 1L;
 
 	/**
-	 *  POIs
+	 * tid of the tour
 	 */
-	private Collection<POI> pois = new ArrayList<POI>();
+	@Id
+	@GeneratedValue(strategy = GenerationType.AUTO)
+	private String tid;
 
 	/**
 	 * name of the tour
@@ -62,14 +67,33 @@ public class Tour implements Serializable {
 	private String name;
 
 	/**
-	 * tid of the tour
-	 */
-	private String tid;
-
-	/**
 	 * description of the tour
 	 */
 	private String description;
+
+	/**
+	 * POIs
+	 */
+	private Collection<POI> pois= new ArrayList<POI>();;
+
+	// /**
+	//  * constructor of tour
+	//  * 
+	//  * @param tid
+	//  *                    id of tour
+	//  * @param name
+	//  *                    name of tour
+	//  * @param description
+	//  *                    description of tour
+	//  * @param pois
+	//  *                    pois of tour
+	//  */
+	// public Tour(final String tid, final String name, final String description, final Collection<POI> pois) {
+	// 	this.tid = tid;
+	// 	this.name = name;
+	// 	this.description = description;
+	// 	this.pois = pois;
+	// }
 
 	/**
 	 * gets the tid of the tour
@@ -78,12 +102,15 @@ public class Tour implements Serializable {
 	 */
 	@Id
 	@GeneratedValue(strategy=GenerationType.AUTO)
-	public String getTid(){
+	public String getTid() {
 		return tid;
 	}
 
 	/**
 	 * sets the tid of the tour
+	 * 
+	 * @param tid
+	 *            tid of tour
 	 */
 	public void setTid(String tid) {
 		this.tid = tid;
@@ -100,6 +127,9 @@ public class Tour implements Serializable {
 
 	/**
 	 * sets the name of the tour
+	 * 
+	 * @param name
+	 *             name of tour
 	 */
 	public void setName(String name) {
 		this.name = name;
@@ -116,37 +146,62 @@ public class Tour implements Serializable {
 
 	/**
 	 * sets the description of the tour
+	 * 
+	 * @param description
+	 *                    description of tour
 	 */
 	public void setDescription(String description) {
 		this.description = description;
 	}
 
 	/**
- * gets the collection of POIs.
- *
- * @return the collection.
- */
-@OneToMany(cascade = ALL, mappedBy = "tour")
-public Collection<POI> getPOIs() {
-	return pois;
-}
+	 * gets the collection of POIs.
+	 *
+	 * @return the collection.
+	 */
+	@ManyToMany(cascade = ALL, mappedBy = "tour")
+	public Collection<POI> getPOIs() {
+		return pois;
+	}
 
-public void setPOIs(final Collection<POI> newValue) {
+	/**
+	 * sets the collection of POIs.
+	 *
+	 * @param newValue
+	 *                 value of new POIS
+	 */
+	public void setPOIs(final Collection<POI> newValue) {
 		this.pois = newValue;
 	}
 
+	/**
+	 * adds POI to tour.
+	 *
+	 * @param poi
+	 *            poi to be added
+	 */
 	public void addPOI(POI poi) {
 		pois.add(poi);
 	}
 
+	/**
+	 * checks if tour contains POI.
+	 *
+	 * @param poi
+	 *            poi
+	 */
 	public boolean contains(POI poi) {
 		return (pois.contains(poi));
 	}
 
+	/**
+	 * removes POI.
+	 *
+	 * @param poi
+	 *            poi to be removed
+	 */
 	public void remove(POI poi) {
 		pois.remove(poi);
 	}
-
-
 
 }

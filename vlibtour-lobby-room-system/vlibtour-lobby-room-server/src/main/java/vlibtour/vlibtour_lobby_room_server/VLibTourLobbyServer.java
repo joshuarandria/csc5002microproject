@@ -21,8 +21,19 @@ Contributor(s):
  */
 package vlibtour.vlibtour_lobby_room_server;
 
+import com.rabbitmq.client.ConnectionFactory;
+
 import vlibtour.vlibtour_lobby_room_api.InAMQPPartException;
 import vlibtour.vlibtour_lobby_room_api.VLibTourLobbyService;
+
+import java.io.IOException;
+import java.util.concurrent.TimeoutException;
+
+import com.rabbitmq.client.Channel;
+import com.rabbitmq.client.Connection;
+import com.rabbitmq.client.ConnectionFactory;
+import com.rabbitmq.client.StringRpcServer;
+import com.rabbitmq.tools.jsonrpc.JsonRpcServer;
 
 /**
  * This class implements the VLibTour lobby room server. This is the entry point
@@ -43,6 +54,10 @@ import vlibtour.vlibtour_lobby_room_api.VLibTourLobbyService;
  * 
  * @author Denis Conan
  */
+/**
+ * the connection to the RabbitMQ broker.
+ */
+
 public class VLibTourLobbyServer implements Runnable, VLibTourLobbyService {
 
 	/**
@@ -51,29 +66,98 @@ public class VLibTourLobbyServer implements Runnable, VLibTourLobbyService {
 	 * @throws InAMQPPartException the exception thrown in case of a problem in the
 	 *                             AMQP part.
 	 */
-	public VLibTourLobbyServer() throws InAMQPPartException {
-		throw new UnsupportedOperationException("Not implemented, yet");
-	}
+	private Connection connection;
+	/**
+	 * the channel for consuming and producing.
+	 */
+	private Channel channel;
+	/**
+	 * the RabbitMQ RPC server that receives string calls.
+	 */
+	private JsonRpcServer rpcServer;
 
-	@Override
-	public String createGroupAndJoinIt(final String groupId, final String userId) {
-		throw new UnsupportedOperationException("Not implemented, yet");
-	}
+	private int port;
+	private String host;
 
-	@Override
-	public String joinAGroup(final String groupId, final String userId) {
-		throw new UnsupportedOperationException("Not implemented, yet");
+//	private ConnectionFactory factory;
+
+	public VLibTourLobbyServer() throws InAMQPPartException, IOException, TimeoutException {
+		ConnectionFactory factory = new ConnectionFactory();
+		factory.setHost("localhost");
+		connection = factory.newConnection();
+		channel = connection.createChannel();
+		channel.exchangeDeclare(VLibTourLobbyService.EXCHANGE_NAME, "direct");
+		String queueName = channel.queueDeclare().getQueue();
+		channel.queueBind(queueName, VLibTourLobbyService.EXCHANGE_NAME, VLibTourLobbyService.BINDING_KEY);
+
+		port = factory.getPort();
+		host = factory.getHost();
+
+		rpcServer = new JsonRpcServer(channel, queueName, VLibTourLobbyService.class, this);
 	}
 
 	/**
-	 * creates the JSON RPC server and enters into the main loop of the JSON RPC
-	 * server. The exit to the main loop is done when calling
+	 * create a group
+	 * 
+	 */
+	@Override
+	public String createGroupAndJoinIt(final String groupId, final String userId) {
+
+		String password = "password";
+
+		try {
+			new ProcessBuilder("docker", "exec", "rabbitmq", "rabbitmqctl", "add_vhost", groupId).inheritIO().start()
+					.waitFor();
+
+			new ProcessBuilder("docker", "exec", "rabbitmq", "rabbitmqctl", "add_user", userId, password).inheritIO()
+					.start().waitFor();
+
+			new ProcessBuilder("docker", "exec", "rabbitmq", "rabbitmqctl", "set_permissions", "-p", groupId, userId,
+					".*", ".*", ".*").inheritIO().start().waitFor();
+		} catch (InterruptedException | IOException e) {
+			e.printStackTrace();
+		}
+
+		String url = "amqp://" + userId + ":" + password + "@" + host + ":" + port + "/" + groupId;
+		return url;
+
+	}
+
+	/**
+	 * join a group
+	 * 
+	 */
+	@Override
+	public String joinAGroup(final String groupId, final String userId) {
+		String password = "password";
+
+		try {
+			new ProcessBuilder("docker", "exec", "rabbitmq", "rabbitmqctl", "add_user", userId, password).inheritIO()
+					.start().waitFor();
+			new ProcessBuilder("docker", "exec", "rabbitmq", "rabbitmqctl", "set_permissions", "-p", groupId, userId,
+					".*", ".*", ".*").inheritIO().start().waitFor();
+		} catch (InterruptedException | IOException e) {
+
+			e.printStackTrace();
+		}
+		
+		String url = "amqp://" + userId + ":" + password + "@" + host + ":" + port + "/" + groupId;
+		return url;
+	}
+
+	/**
+	 * creates the JSON RPC serverconnection and enters into the main loop of the
+	 * JSON RPC server. The exit to the main loop is done when calling
 	 * {@code stopLobbyRoom()} on the administration server. At the end of this
 	 * method, the connectivity is closed.
 	 */
 	@Override
 	public void run() {
-		throw new UnsupportedOperationException("Not implemented, yet");
+		try {
+			rpcServer.mainloop();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	/**
@@ -82,9 +166,23 @@ public class VLibTourLobbyServer implements Runnable, VLibTourLobbyService {
 	 * 
 	 * @throws InAMQPPartException the exception thrown in case of a problem in the
 	 *                             AMQP part.
+	 * @throws IOException
+	 * @throws TimeoutException
 	 */
-	public void close() throws InAMQPPartException {
-		throw new UnsupportedOperationException("Not implemented, yet");
+	public void close() throws InAMQPPartException, IOException, TimeoutException {
+
+		if (rpcServer != null) {
+			rpcServer.terminateMainloop();
+			rpcServer.close();
+		}
+		if (channel != null) {
+			channel.close();
+		}
+		if (connection != null) {
+			connection.close();
+
+		}
+
 	}
 
 	/**
@@ -100,6 +198,7 @@ public class VLibTourLobbyServer implements Runnable, VLibTourLobbyService {
 	 *                   treatment).
 	 */
 	public static void main(final String[] args) throws Exception {
-		throw new UnsupportedOperationException("Not implemented, yet");
+		VLibTourLobbyServer rpcServer = new VLibTourLobbyServer();
+		rpcServer.run();
 	}
 }

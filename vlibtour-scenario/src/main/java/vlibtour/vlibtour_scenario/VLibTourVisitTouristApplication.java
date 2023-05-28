@@ -26,16 +26,29 @@ import static vlibtour.vlibtour_common.Log.LOG_ON;
 
 import java.awt.Color;
 import java.awt.Font;
+import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
+import javax.naming.Context;
 import javax.naming.NamingException;
 
 import org.openstreetmap.gui.jmapviewer.MapMarkerDot;
 
+import com.rabbitmq.client.AMQP;
+import com.rabbitmq.client.Consumer;
+import com.rabbitmq.client.DefaultConsumer;
+import com.rabbitmq.client.Envelope;
 import com.rabbitmq.tools.jsonrpc.JsonRpcException;
 
+import jakarta.ejb.embeddable.EJBContainer;
 import vlibtour.vlibtour_common.ExampleOfAVisitWithTwoTourists;
 import vlibtour.vlibtour_common.Position;
 import vlibtour.vlibtour_group_communication_proxy.VLibTourGroupCommunicationSystemProxy;
@@ -43,6 +56,8 @@ import vlibtour.vlibtour_lobby_room_api.InAMQPPartException;
 import vlibtour.vlibtour_lobby_room_proxy.VLibTourLobbyRoomProxy;
 import vlibtour.vlibtour_scenario.map_viewer.BasicMap;
 import vlibtour.vlibtour_scenario.map_viewer.MapHelper;
+import vlibtour.vlibtour_tour_management.api.VlibTourTourManagement;
+import vlibtour.vlibtour_tour_management.entity.Tour;
 import vlibtour.vlibtour_tour_management.entity.VlibTourTourManagementException;
 import vlibtour.vlibtour_visit_emulation_proxy.VisitEmulationProxy;
 
@@ -58,9 +73,9 @@ import vlibtour.vlibtour_visit_emulation_proxy.VisitEmulationProxy;
  * <p>
  * This class uses the classes
  * {@link vlibtour.vlibtour_scenario.map_viewer.MapHelper} and
- * {@link vlibtour.vlibtour_scenario.map_viewer.BasicMap} for displaying
- * the tourists on the map of Paris. Use the attributes for the color, the map,
- * the map marker dot, etc.
+ * {@link vlibtour.vlibtour_scenario.map_viewer.BasicMap} for displaying the
+ * tourists on the map of Paris. Use the attributes for the color, the map, the
+ * map marker dot, etc.
  * 
  * @author Denis Conan
  */
@@ -88,17 +103,16 @@ public class VLibTourVisitTouristApplication {
 	 * The annotation {@code @SuppressWarnings} is useful as long as you do not use
 	 * this attribute.
 	 */
-	// @SuppressWarnings("unused")
-	private static MapMarkerDot mapDotClient;
 
-	// private static MapMarkerDot mapDotJoe;
+	private static MapMarkerDot mapDotJoe;
+
 	/**
 	 * the dot on the map for the second tourist.
 	 * <p>
 	 * The annotation {@code @SuppressWarnings} is useful as long as you do not use
 	 * this attribute. Please remove the annotation when this is so.
 	 */
-	// @SuppressWarnings("unused")
+
 	private static MapMarkerDot mapDotAvrel;
 	/**
 	 * delegation to the proxy of type
@@ -107,7 +121,7 @@ public class VLibTourVisitTouristApplication {
 	 * The annotation {@code @SuppressWarnings} is useful as long as you do not use
 	 * this attribute. Please remove the annotation when this is so.
 	 */
-	// @SuppressWarnings("unused")
+
 	private VisitEmulationProxy emulationVisitProxy;
 	/**
 	 * delegation to the proxy of type
@@ -116,7 +130,7 @@ public class VLibTourVisitTouristApplication {
 	 * The annotation {@code @SuppressWarnings} is useful as long as you do not use
 	 * this attribute. Please remove the annotation when this is so.
 	 */
-	@SuppressWarnings("unused")
+
 	private VLibTourLobbyRoomProxy lobbyRoomProxy;
 	/**
 	 * delegation to the proxy of type
@@ -126,8 +140,12 @@ public class VLibTourVisitTouristApplication {
 	 * The annotation {@code @SuppressWarnings} is useful as long as you do not use
 	 * this attribute. Please remove the annotation when this is so.
 	 */
-	@SuppressWarnings("unused")
+
 	private VLibTourGroupCommunicationSystemProxy groupCommProxy;
+
+	private static String url;
+
+	private static Consumer consumer;
 
 	/**
 	 * creates a client application, which will join a group that must already
@@ -154,11 +172,61 @@ public class VLibTourVisitTouristApplication {
 	 * @throws InterruptedException            thread interrupted in call sleep.
 	 * @throws NamingException                 the EJB server has not been found
 	 *                                         when getting the tour identifier.
+	 * @throws URISyntaxException
+	 * @throws NoSuchAlgorithmException
+	 * @throws KeyManagementException
 	 */
-	public VLibTourVisitTouristApplication(final String tourId, final Optional<String> groupId, final String userId)
+	public VLibTourVisitTouristApplication(final String tourId, Optional<String> groupId, final String userId)
 			throws InAMQPPartException, VlibTourTourManagementException, IOException, JsonRpcException,
-			TimeoutException, InterruptedException, NamingException {
+			TimeoutException, InterruptedException, NamingException, KeyManagementException, NoSuchAlgorithmException,
+			URISyntaxException {
+		System.out.println(
+				"_______________New instance of VLibTourVisitTouristApplication: " + userId + "_________________");
 		emulationVisitProxy = new VisitEmulationProxy();
+		if (groupId.isPresent()) {
+			lobbyRoomProxy = new VLibTourLobbyRoomProxy(groupId.get(), tourId, userId);
+		} else {
+			lobbyRoomProxy = new VLibTourLobbyRoomProxy(tourId, userId);
+		}
+
+		// CASE CREATE A GROUP
+		if (!groupId.isPresent()) {
+			// we fetch the groupId that was computed by the constructor
+			groupId = Optional.ofNullable(lobbyRoomProxy.getGroupId());
+			System.out.println("groupid C1 = " + groupId.get());
+			url = lobbyRoomProxy.createGroupAndJoinIt(groupId.get(), userId);
+		}
+		// CASE JOIN A GROUP
+		else {
+			System.out.println("groupid C2 = " + groupId.get());
+			url = lobbyRoomProxy.joinAGroup(groupId.get(), userId);
+		}
+
+		groupCommProxy = new VLibTourGroupCommunicationSystemProxy(url);
+
+		consumer = new DefaultConsumer(groupCommProxy.getChannel()) {
+			@Override
+			public void handleDelivery(final String consumerTag, final Envelope envelope,
+					final AMQP.BasicProperties properties, final byte[] body) throws IOException {
+				String message = new String(body, StandardCharsets.UTF_8);
+				System.out.println("[" + userId + "] received '" + envelope.getRoutingKey() + "':'" + message + "'");
+				Position position = Position.GSON.fromJson(new String(body, StandardCharsets.UTF_8), Position.class);
+				// System.out.println("userId: "+userId);
+				String sender = envelope.getRoutingKey().split("\\.")[0];
+				// if (sender.equals(userId)) {
+					if (sender.equals(ExampleOfAVisitWithTwoTourists.USER_ID_AVREL)) {
+						System.out.println("Update position of Avrel on Map");
+						MapHelper.moveTouristOnMap(mapDotAvrel, position);
+					} else {
+						System.out.println("Update position of Joe on Map");
+						MapHelper.moveTouristOnMap(mapDotJoe, position);
+					}
+				// }
+			}
+		};
+
+		groupCommProxy.setConsumer(consumer);
+
 	}
 
 	/**
@@ -172,62 +240,64 @@ public class VLibTourVisitTouristApplication {
 	 *                   apply the strategy "fail fast").
 	 */
 	public static void main(final String[] args) throws Exception {
+		System.out.println("\nVLibTourVisitTouristeApplication" + args.toString() + "\n\n");
 		@SuppressWarnings("unused")
 		String usage = "USAGE: " + VLibTourVisitTouristApplication.class.getCanonicalName()
-				+ " userId (either Joe or Avrel)";
-		if (args.length != 1) {
-			throw new IllegalArgumentException(usage);
-		}
+				+ " userId (either Joe or Avrel)" + "tourID (The unusual Paris)" + "optional: groupId";
+		// if (args.length != 2 || args.length != 3) {
+		// throw new IllegalArgumentException(usage);
+		// }
+
+		VLibTourVisitTouristApplication client;
+
+		// ################ GETTING ARGS ###################
 		String userId = args[0];
-		final VLibTourVisitTouristApplication client = new VLibTourVisitTouristApplication("The unusual Paris",
-				Optional.empty(), userId);
-		if (LOG_ON && EMULATION.isInfoEnabled()) {
-			EMULATION.info(userId + "'s application is starting");
+		// System.out.println("userId = " + userId);
+		String tourId = args[1];
+		// System.out.println("tourId = " + tourId);
+		Optional<String> groupId = Optional.empty();
+		if (args.length == 3) {
+			groupId = Optional.ofNullable(args[2]);
 		}
-		// The tour is empty. This client gets it from the data base (first found).
-		// TODO
-		// Start the VLibTourVisitTouristApplication applications.
-		// TODO
+
+		client = new VLibTourVisitTouristApplication(tourId, groupId, userId);
+
+		// if (LOG_ON && EMULATION.isInfoEnabled()) {
+		// EMULATION.info(userId + "'s application is sConsumertarting");
+		// }
+
+		// ################ MAP ###################
 		// Set the map viewer of the scenario (if this is this client application that
 		// has created the group [see #VLibTourVisitTouristApplication(...)])
 		// The following code should be completed.
-		// FIXME
+		// FIXMEclient.groupCommProxy.setConsumer(consumer);
 		if (LOG_ON && EMULATION.isDebugEnabled()) {
 			EMULATION.debug("Current directory = " + System.getProperty("user.dir") + ".\n" + "We assume that class "
 					+ client.getClass().getCanonicalName() + " is launched from directory "
 					+ "./vlibtour-scenario/src/main/resources/osm-mapnik/");
 		}
-
-		// CHECKSTYLE:OFF
 		client.map = Optional.of(MapHelper.createMapWithCenterAndZoomLevel(48.851412, 2.343166, 14));
 		Font font = new Font("name", Font.BOLD, 20);
 		client.map.ifPresent(m -> {
 			MapHelper.addMarkerDotOnMap(m, 48.871799, 2.342355, Color.BLACK, font, "Musée Grevin");
 			MapHelper.addMarkerDotOnMap(m, 48.860959, 2.335757, Color.BLACK, font, "Pyramide du Louvre");
 			MapHelper.addMarkerDotOnMap(m, 48.833566, 2.332416, Color.BLACK, font, "Les catacombes");
-			//  CHECKSTYLE:ON
+
 			// all the tourists start at the same position
-			System.out.print("addTouristOnMap \n");
-			// Position positionOfJoe = client.emulationVisitProxy
-			// 		.getCurrentPosition(ExampleOfAVisitWithTwoTourists.USER_ID_JOE); // new Position(String.valueOf(2),
-			Position positionOfClient = client.emulationVisitProxy
-					.getCurrentPosition(userId); 																			// new GPSPosition(48.869301,
-																						// 2.3450524));
-			// System.out.print("Joe position" + positionOfJoe + " \n");
-			System.out.print("Joe position" + positionOfClient + " \n");
+			System.out.print("add " + userId + " on Map \n");
 
-			// mapDotJoe = MapHelper.addTouristOnMap(m, COLOR_JOE, font, ExampleOfAVisitWithTwoTourists.USER_ID_JOE,
-			// 		positionOfJoe);
-			mapDotClient = MapHelper.addTouristOnMap(m, COLOR_JOE, font, userId,
-					positionOfClient);
-			System.out.print("done \n");
+			Position positionOfJoe = client.emulationVisitProxy
+					.getCurrentPosition(ExampleOfAVisitWithTwoTourists.USER_ID_JOE);
+			mapDotJoe = MapHelper.addTouristOnMap(m, COLOR_JOE, font, ExampleOfAVisitWithTwoTourists.USER_ID_JOE,
+					positionOfJoe);
 
-			// Position positionOfAvrel = client.emulationVisitProxy
-			// 		.getCurrentPosition(ExampleOfAVisitWithTwoTourists.USER_ID_AVREL);
-			// mapDotAvrel = MapHelper.addTouristOnMap(m, COLOR_AVREL, font,
-			// 		ExampleOfAVisitWithTwoTourists.USER_ID_AVREL,
-			// 		positionOfAvrel);
+			Position positionOfAvrel = client.emulationVisitProxy
+					.getCurrentPosition(ExampleOfAVisitWithTwoTourists.USER_ID_AVREL);
+			mapDotAvrel = MapHelper.addTouristOnMap(m, COLOR_AVREL, font,
+					ExampleOfAVisitWithTwoTourists.USER_ID_AVREL, positionOfAvrel);
+
 			client.map.get().repaint();
+
 			// wait for painting the map
 			try {
 				final long timeout = 1000;
@@ -236,35 +306,43 @@ public class VLibTourVisitTouristApplication {
 				e.printStackTrace();
 			}
 		});
-		System.out.println("sortie client.map.ifPresent");
-		// Start the consumption of messages, i.e. positions of group members,
-		// from the group communication system.
-		// TODO
-		// Repaint: It takes approximately 3s
-		// => delay only non-leader clients
-		// => not all the clients at the same speed
-		// TODO
-		// Loop until the end of the visit is detected
-		System.out.print("startLoop \n");
-		Position positionOfJoe= client.emulationVisitProxy.getCurrentPosition(userId);
-		System.out.print("stepsInVisit userID: " + client.emulationVisitProxy.stepsInVisit(userId) + "\n");
-		Position nextPositionOfJoe = client.emulationVisitProxy.stepInCurrentPath(userId);
 
-		// System.out.print("Joe at the begin stepinCurrentPath: " + client.emulationVisitProxy.stepInCurrentPath(userId) + "\n \n");
+		// ################ GROUP COMM ###################
 
-		while (!(positionOfJoe.equals(nextPositionOfJoe))) {
+		try {
+
+			client.groupCommProxy.startConsumption();
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
+
+		System.out.print("\n\n - - - - - - - - - - - - - - - - - - startLoop - - - - - - - - - - - - - - - \n");
+		Position positionOfClient = client.emulationVisitProxy.getCurrentPosition(userId);
+		client.emulationVisitProxy.stepsInVisit(userId);
+		Position nextPositionOfClient = client.emulationVisitProxy.stepInCurrentPath(userId);
+		client.emulationVisitProxy.stepInCurrentPath(userId);
+
+		while (!(positionOfClient.equals(nextPositionOfClient))) {
+			System.out.print("\n");
 			// Step in the current path.
-			positionOfJoe=nextPositionOfJoe;
-			System.out.print("currentpos userID: " + positionOfJoe + "\n");
-			System.out.print("stepsInVisit userID: " + client.emulationVisitProxy.stepsInVisit(userId) + "\n");
-			nextPositionOfJoe = client.emulationVisitProxy.stepInCurrentPath(userId);
+			positionOfClient = nextPositionOfClient;
+			System.out.print("currentPosition of " + userId + ": " + positionOfClient + "\n");
+			client.emulationVisitProxy.stepsInVisit(userId);
+			nextPositionOfClient = client.emulationVisitProxy.stepInCurrentPath(userId);
 			client.map.get().repaint();
+
 			Thread.sleep(3000);
-			MapHelper.moveTouristOnMap(mapDotClient, nextPositionOfJoe);
-			// TODO
-			// Repaint: It take approximately 2x2s
-			// => delay only non-leader clients
-			// => not all the clients at the same speed
+			if (userId.equals(ExampleOfAVisitWithTwoTourists.USER_ID_JOE)) {
+				MapHelper.moveTouristOnMap(mapDotJoe, nextPositionOfClient);
+			} else {
+				MapHelper.moveTouristOnMap(mapDotAvrel, nextPositionOfClient);
+			}
+			// share Position
+			System.out.println(userId + " publishes his position");
+			String jsonPos = Position.GSON.toJson(positionOfClient, Position.class);
+			// System.out.println("json pos = " + jsonPos);
+			client.groupCommProxy.publish(userId + ".all.#", jsonPos);
+			Thread.sleep(2500);
 			client.map.get().repaint();
 			// wait for painting the map
 			try {
@@ -274,11 +352,11 @@ public class VLibTourVisitTouristApplication {
 				e.printStackTrace();
 			}
 		}
-		// Close the channel and the connection.
-		// TODO
-		// Exit this main, e.g. System.exit...
-		System.out.println("fin tour app");
-		System.exit(0);
+		System.out.print("- - - - - - - - - - - - - - - - - - - endLoop - - - - - - - - - - - - - - - \n");
 
+		// Close the channel and the connection.
+		client.groupCommProxy.close();
+		System.out.println("fin tour app " + userId);
+		System.exit(0);
 	}
 }

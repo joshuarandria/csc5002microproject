@@ -26,12 +26,12 @@ public class DistanceTest {
 
     @Test
     public void testSphericalLawOfCosinesDistance() {
-        //Kew
+        // Kew
         Coordinate lat = new DegreeCoordinate(51.4843774);
         Coordinate lng = new DegreeCoordinate(-0.2912044);
         Point kew = new Point(lat, lng);
 
-        //Richmond
+        // Richmond
         lat = new DegreeCoordinate(51.4613418);
         lng = new DegreeCoordinate(-0.3035466);
         Point richmond = new Point(lat, lng);
@@ -54,63 +54,63 @@ public class DistanceTest {
 
     @Test
     public void testDistanceToBuenosAires() {
-        //Kew
+        // Kew
         Coordinate lat = new DMSCoordinate(51, 29, 3.7572);
         Coordinate lng = new DMSCoordinate(0, 17, 28.3338);
 
         Point kew = new Point(lat, lng);
 
-        //Buenos Aires
+        // Buenos Aires
         lat = new DMSCoordinate(-34, 36, 35.9994);
         lng = new DMSCoordinate(-58, 22, 11.9994);
 
         Point buenosAires = new Point(lat, lng);
 
-        assertEquals(11146, (int) (EarthCalc.getDistance(buenosAires, kew) / 1000)); //km
+        assertEquals(11146, (int) (EarthCalc.getDistance(buenosAires, kew) / 1000)); // km
     }
 
     @Test
     public void testHarvesineDistanceToBuenosAires() {
-        //Kew
+        // Kew
         Coordinate lat = new DMSCoordinate(51, 29, 3.7572);
         Coordinate lng = new DMSCoordinate(0, 17, 28.3338);
 
         Point kew = new Point(lat, lng);
 
-        //Buenos Aires
+        // Buenos Aires
         lat = new DMSCoordinate(-34, 36, 35.9994);
         lng = new DMSCoordinate(-58, 22, 11.9994);
 
         Point buenosAires = new Point(lat, lng);
 
-        assertEquals(11146, (int) (EarthCalc.getHarvesineDistance(buenosAires, kew) / 1000)); //km
+        assertEquals(11146, (int) (EarthCalc.getHarvesineDistance(buenosAires, kew) / 1000)); // km
     }
 
     @Test
     public void testVincentyDistanceToBuenosAires() {
-        //Kew
+        // Kew
         Coordinate lat = new DMSCoordinate(51, 29, 3.7572);
         Coordinate lng = new DMSCoordinate(0, 17, 28.3338);
 
         Point kew = new Point(lat, lng);
 
-        //Buenos Aires
+        // Buenos Aires
         lat = new DMSCoordinate(-34, 36, 35.9994);
         lng = new DMSCoordinate(-58, 22, 11.9994);
 
         Point buenosAires = new Point(lat, lng);
 
-        assertEquals(11120, (int) (EarthCalc.getVincentyDistance(buenosAires, kew) / 1000)); //km
+        assertEquals(11120, (int) (EarthCalc.getVincentyDistance(buenosAires, kew) / 1000)); // km
     }
 
     @Test
     public void testSymmetricDistance() {
-        //Kew
+        // Kew
         Coordinate lat = new DegreeCoordinate(51.4843774);
         Coordinate lng = new DegreeCoordinate(-0.2912044);
         Point kew = new Point(lat, lng);
 
-        //Richmond
+        // Richmond
         lat = new DegreeCoordinate(51.4613418);
         lng = new DegreeCoordinate(-0.3035466);
         Point richmond = new Point(lat, lng);
@@ -120,7 +120,7 @@ public class DistanceTest {
 
     @Test
     public void testZeroDistance() {
-        //Kew
+        // Kew
         Coordinate lat = new DegreeCoordinate(51.4843774);
         Coordinate lng = new DegreeCoordinate(-0.2912044);
         Point kew = new Point(lat, lng);
@@ -130,7 +130,7 @@ public class DistanceTest {
 
     @Test
     public void testBoundingAreaDistance() {
-        //Kew
+        // Kew
         Coordinate lat = new DegreeCoordinate(51.4843774);
         Coordinate lng = new DegreeCoordinate(-0.2912044);
         Point kew = new Point(lat, lng);
@@ -167,13 +167,15 @@ public class DistanceTest {
         logger.info("Middle South => " + middleSouthDistance);
         assertEquals(2120d, middleSouthDistance, 2);
 
-        Point middleWest = new Point(new DegreeCoordinate((area.getNorthEast().latitude + area.getSouthWest().latitude) / 2),
+        Point middleWest = new Point(
+                new DegreeCoordinate((area.getNorthEast().latitude + area.getSouthWest().latitude) / 2),
                 new DegreeCoordinate(area.getNorthEast().longitude));
         double middleWestDistance = EarthCalc.getDistance(kew, middleWest);
         logger.info("Middle West => " + middleWestDistance);
         assertEquals(2120d, middleWestDistance, 3);
 
-        Point middleEast = new Point(new DegreeCoordinate((area.getNorthEast().latitude + area.getSouthWest().latitude) / 2),
+        Point middleEast = new Point(
+                new DegreeCoordinate((area.getNorthEast().latitude + area.getSouthWest().latitude) / 2),
                 new DegreeCoordinate(area.getSouthWest().longitude));
         double middleEastDistance = EarthCalc.getDistance(kew, middleEast);
         logger.info("Middle East => " + middleEastDistance);
@@ -182,7 +184,7 @@ public class DistanceTest {
 
     @Test
     public void testBoundingAreaNorthPole() {
-        //North Pole
+        // North Pole
         Coordinate lat = new DegreeCoordinate(90d);
         Coordinate lng = new DegreeCoordinate(0);
         Point northPole = new Point(lat, lng);
@@ -200,7 +202,7 @@ public class DistanceTest {
 
     @Test
     public void testBoundingAreaNextToLondon() {
-        //North Pole
+        // North Pole
         Coordinate lat = new DegreeCoordinate(51.5085452);
         Coordinate lng = new DegreeCoordinate(-0.1997387000000117);
         Point northPole = new Point(lat, lng);
@@ -218,7 +220,7 @@ public class DistanceTest {
 
     @Test
     public void testPointRadialDistanceZero() {
-        //Kew
+        // Kew
         Coordinate lat = new DegreeCoordinate(51.4843774);
         Coordinate lng = new DegreeCoordinate(-0.2912044);
         Point kew = new Point(lat, lng);
@@ -238,12 +240,12 @@ public class DistanceTest {
 
     @Test
     public void testPointRadialDistance() {
-        //Kew
+        // Kew
         Coordinate lat = new DegreeCoordinate(51.4843774);
         Coordinate lng = new DegreeCoordinate(-0.2912044);
         Point kew = new Point(lat, lng);
 
-        //Richmond
+        // Richmond
         lat = new DegreeCoordinate(51.4613418);
         lng = new DegreeCoordinate(-0.3035466);
         Point richmond = new Point(lat, lng);
@@ -259,12 +261,12 @@ public class DistanceTest {
 
     @Test
     public void testBearing() {
-        //Kew
+        // Kew
         Coordinate lat = new DegreeCoordinate(51.4843774);
         Coordinate lng = new DegreeCoordinate(-0.2912044);
         Point kew = new Point(lat, lng);
 
-        //Richmond, London
+        // Richmond, London
         lat = new DegreeCoordinate(51.4613418);
         lng = new DegreeCoordinate(-0.3035466);
         Point richmond = new Point(lat, lng);
@@ -300,23 +302,26 @@ public class DistanceTest {
          * and not 19.213575108209017
          */
         DMSCoordinate d = new DMSCoordinate(19, 13, 50);
-        assertEquals(EarthCalc.getBearing(standpoint, forepoint), new DMSCoordinate(19, 13, 50).getDegreeCoordinate().getDecimalDegrees(), 10E-5);
+        assertEquals(EarthCalc.getBearing(standpoint, forepoint),
+                new DMSCoordinate(19, 13, 50).getDegreeCoordinate().getDecimalDegrees(), 10E-5);
     }
 
     @Test
     public void testVincentyBearing() {
-        //Kew
+        // Kew
         Coordinate lat = new DegreeCoordinate(51.4843774);
         Coordinate lng = new DegreeCoordinate(-0.2912044);
         Point kew = new Point(lat, lng);
 
-        //Richmond, London
+        // Richmond, London
         lat = new DegreeCoordinate(51.4613418);
         lng = new DegreeCoordinate(-0.3035466);
         Point richmond = new Point(lat, lng);
 
-        //comparing to results from ttp://www.movable-type.co.uk/scripts/latlong.html
-        assertEquals(EarthCalc.getVincentyBearing(kew, richmond), new DMSCoordinate(198, 30, 19.58).decimalDegrees, 10E-5);
-        assertEquals(EarthCalc.getVincentyFinalBearing(kew, richmond), new DMSCoordinate(198, 29, 44.82).decimalDegrees, 10E-5);
+        // comparing to results from ttp://www.movable-type.co.uk/scripts/latlong.html
+        assertEquals(EarthCalc.getVincentyBearing(kew, richmond), new DMSCoordinate(198, 30, 19.58).decimalDegrees,
+                10E-5);
+        assertEquals(EarthCalc.getVincentyFinalBearing(kew, richmond), new DMSCoordinate(198, 29, 44.82).decimalDegrees,
+                10E-5);
     }
 }
