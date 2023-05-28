@@ -2,6 +2,12 @@ This is the case study "VlibTour".
 
 To compile and install, execute the following command:
  mvn clean install
+ 
+To run the scenario of the demonstrator:
+ ./run_scenario_w_mapviewer.sh
+ 
+ need to press ENTER when tour of joe and avrel finished ("endLoop") to clean the project after running 
+ 
 
 To create the glassfish docker image, start the container, test it, and stop and remove it:
  docker build -t glassfish6-tsp-csc - < dockerfile
@@ -14,9 +20,6 @@ CONTAINER ID   IMAGE ...
  docker stop glassfish
  docker rm glassfish
 
-
-To run the scenario of the demonstrator:
- ./run_scenario_w_mapviewer.sh
 
 Here follows some explanations on the content.
 The shell script of the scenario is 'run_scenario_w_mapviewer.sh'. It uses the
